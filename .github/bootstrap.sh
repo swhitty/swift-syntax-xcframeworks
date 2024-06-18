@@ -5,8 +5,8 @@ SWIFT_SYNTAX_NAME="swift-syntax"
 SWIFT_SYNTAX_REPOSITORY_URL="https://github.com/apple/$SWIFT_SYNTAX_NAME.git"
 SEMVER_PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 WRAPPER_NAME="SwiftSyntaxWrapper"
-ARCH="arm64"
-CONFIGURATION="debug"
+ARCH="arm64" # for *.swiftinterface
+CONFIGURATION="release"
 DERIVED_DATA_PATH="$PWD/derivedData"
 
 #
@@ -88,8 +88,8 @@ MODULES=(
 
 PLATFORMS=(
     # xcodebuild destination    XCFramework folder name
-    "macos"                     "macos-$ARCH"
-    "iOS Simulator"             "ios-$ARCH-simulator"
+    "macos"                     "macos-arm64_x86_64"
+    "iOS Simulator"             "ios-arm64_x86_64-simulator"
 )
 
 XCODEBUILD_LIBRARIES=""
@@ -123,7 +123,13 @@ for ((i = 0; i < ${#PLATFORMS[@]}; i += 2)); do
     done
 
     # FIXME: figure out how to make xcodebuild output the .a file directly. For now, we package it ourselves.
-    ar -crs "$LIBRARY_PATH" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/*.build/Objects-normal/$ARCH/Binary/*.o
+	
+	LIBRARY_ARM_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}-arm64.a"
+	LIBRARY_x86_PATH="${OUTPUTS_PATH}/lib${WRAPPER_NAME}-x86_64.a"
+
+    ar -crs "${LIBRARY_ARM_PATH}" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/*.build/Objects-normal/arm64/Binary/*.o
+    ar -crs "${LIBRARY_x86_PATH}" $DERIVED_DATA_PATH/Build/Intermediates.noindex/swift-syntax.build/$CONFIGURATION*/*.build/Objects-normal/x86_64/Binary/*.o
+	lipo -create "${LIBRARY_ARM_PATH}" "${LIBRARY_x86_PATH}" -output "${LIBRARY_PATH}"	
 done
 
 cd ..
